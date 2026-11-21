@@ -30,8 +30,21 @@
   animation: vb-pop 0.14s ease-out;
 }
 
+/* Theme tối: chọn cố định trong cài đặt, hoặc "theo hệ thống" khi hệ điều hành dùng nền tối */
+#vocab-bubble-ext[data-theme="dark"] {
+  --vb-bg: #1f2937;
+  --vb-fg: #f3f4f6;
+  --vb-muted: #9ca3af;
+  --vb-border: #374151;
+  --vb-accent: #60a5fa;
+  --vb-accent-bg: rgba(96, 165, 250, 0.15);
+  --vb-pos-bg: #374151;
+  --vb-error: #f87171;
+  --vb-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
 @media (prefers-color-scheme: dark) {
-  #vocab-bubble-ext {
+  #vocab-bubble-ext:not([data-theme="light"]) {
     --vb-bg: #1f2937;
     --vb-fg: #f3f4f6;
     --vb-muted: #9ca3af;
@@ -117,6 +130,22 @@
 #vocab-bubble-ext .vb-btn:hover {
   background: var(--vb-accent-bg);
   color: var(--vb-accent);
+}
+
+#vocab-bubble-ext .vb-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+  background: none;
+  color: var(--vb-muted);
+}
+
+#vocab-bubble-ext .vb-btn-save.vb-saved,
+#vocab-bubble-ext .vb-btn-save.vb-saved:hover {
+  color: #f59e0b;
+}
+
+#vocab-bubble-ext .vb-btn-save.vb-saved svg {
+  fill: currentColor;
 }
 
 #vocab-bubble-ext .vb-btn:focus-visible {

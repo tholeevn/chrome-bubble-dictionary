@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vocab Bubble – Quản lý</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body class="manager">
+  <div class="layout">
+    <header class="app-header">
+      <div>
+        <h1 class="app-title">Vocab Bubble</h1>
+        <p class="app-subtitle">Sổ từ vựng, lịch sử tra từ và cài đặt</p>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-view="words">Sổ từ <span class="tab-count" id="words-count"></span></button>
+      <button type="button" class="tab" role="tab" data-view="history">Lịch sử <span class="tab-count" id="history-count"></span></button>
+      <button type="button" class="tab" role="tab" data-view="settings">Cài đặt</button>
+    </nav>
+
+    <div class="toolbar" id="toolbar">
+      <input type="search" id="search" class="search" placeholder="Tìm từ hoặc nghĩa..." autocomplete="off">
+      <select id="sort" class="select" data-for="words" aria-label="Sắp xếp">
+        <option value="recent">Mới lưu nhất</option>
+        <option value="alpha">A → Z</option>
+      </select>
+      <div class="toolbar-actions" data-for="words">
+        <button type="button" class="btn" id="export-anki">Xuất Anki</button>
+        <button type="button" class="btn" id="export-json">Sao lưu JSON</button>
+        <button type="button" class="btn" id="import-json">Khôi phục JSON</button>
+        <input type="file" id="import-file" accept="application/json,.json" hidden>
+      </div>
+      <div class="toolbar-actions" data-for="history">
+        <button type="button" class="btn btn-danger" id="clear-history">Xoá toàn bộ lịch sử</button>
+      </div>
+    </div>
+
+    <main class="content">
+      <section data-panel="words"><ul class="card-list" id="words-list"></ul></section>
+      <section data-panel="history"><ul class="card-list" id="history-list"></ul></section>
+
+      <section data-panel="settings">
+        <form id="settings-form" class="settings">
+          <fieldset class="setting-group">
+            <legend>Cách kích hoạt</legend>
+            <label class="option">
+              <input type="radio" name="trigger" value="contextMenu">
+              <span><strong>Chỉ menu chuột phải</strong><small>Bôi đen một từ → chuột phải → Tra từ.</small></span>
+            </label>
+            <label class="option">
+              <input type="radio" name="trigger" value="select">
+              <span><strong>Tự hiện khi bôi đen</strong><small>Bong bóng hiện ngay khi bôi đen hoặc double-click một từ.</small></span>
+            </label>
+            <label class="option">
+              <input type="radio" name="trigger" value="altSelect">
+              <span><strong>Bôi đen khi giữ phím Alt</strong><small>Giữ Alt (⌥ Option trên Mac) trong lúc bôi đen hoặc double-click.</small></span>
+            </label>
+            <p class="hint">Mục “Tra từ” trong menu chuột phải luôn dùng được ở mọi chế độ.</p>
+          </fieldset>
+
+          <fieldset class="setting-group">
+            <legend>Giọng đọc</legend>
+            <label class="option">
+              <input type="radio" name="accent" value="us">
+              <span><strong>Anh – Mỹ (US)</strong></span>
+            </label>
+            <label class="option">
+              <input type="radio" name="accent" value="uk">
+              <span><strong>Anh – Anh (UK)</strong></span>
+            </label>
+            <p class="hint">Nếu không có bản ghi âm giọng đã chọn, dùng giọng còn lại hoặc giọng đọc của trình duyệt.</p>
+          </fieldset>
+
+          <fieldset class="setting-group">
+            <legend>Nội dung bong bóng</legend>
+            <label class="option">
+              <input type="checkbox" name="showVietnamese">
+              <span><strong>Hiện nghĩa tiếng Việt của từ</strong></span>
+            </label>
+            <label class="option">
+              <input type="checkbox" name="translateDefinitions">
+              <span><strong>Dịch từng định nghĩa sang tiếng Việt</strong></span>
+            </label>
+            <label class="option option-inline">
+              <span><strong>Số nghĩa hiển thị</strong></span>
+              <select name="maxDefinitions" class="select" data-type="number">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </label>
+          </fieldset>
+
+          <fieldset class="setting-group">
+            <legend>Giao diện</legend>
+            <label class="option">
+              <input type="radio" name="theme" value="auto">
+              <span><strong>Theo hệ thống</strong></span>
+            </label>
+            <label class="option">
+              <input type="radio" name="theme" value="light">
+              <span><strong>Sáng</strong></span>
+            </label>
+            <label class="option">
+              <input type="radio" name="theme" value="dark">
+              <span><strong>Tối</strong></span>
+            </label>
+          </fieldset>
+
+          <fieldset class="setting-group">
+            <legend>Lịch sử tra từ</legend>
+            <label class="option">
+              <input type="checkbox" name="historyEnabled">
+              <span><strong>Ghi lại các từ đã tra</strong></span>
+            </label>
+            <label class="option option-inline">
+              <span><strong>Giữ tối đa</strong></span>
+              <select name="historyLimit" class="select" data-type="number">
+                <option value="100">100 mục</option>
+                <option value="500">500 mục</option>
+                <option value="1000">1000 mục</option>
+                <option value="5000">5000 mục</option>
+              </select>
+            </label>
+          </fieldset>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="../lib/store.js"></script>
+  <script src="../lib/audio.js"></script>
+  <script src="../lib/dictionary.js"></script>
+  <script src="../lib/ui.js"></script>
+  <script src="../lib/export.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

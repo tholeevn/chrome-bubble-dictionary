@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Vocab Bubble</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body class="popup">
+  <header class="app-header">
+    <h1 class="app-title">Vocab Bubble</h1>
+    <div class="app-header-actions" id="header-actions"></div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button type="button" class="tab" role="tab" data-view="words">Sổ từ <span class="tab-count" id="words-count"></span></button>
+    <button type="button" class="tab" role="tab" data-view="history">Lịch sử <span class="tab-count" id="history-count"></span></button>
+  </nav>
+
+  <div class="toolbar" id="toolbar">
+    <input type="search" id="search" class="search" placeholder="Tìm từ hoặc nghĩa..." autocomplete="off">
+  </div>
+
+  <main class="content">
+    <section data-panel="words"><ul class="card-list" id="words-list"></ul></section>
+    <section data-panel="history"><ul class="card-list" id="history-list"></ul></section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="../lib/store.js"></script>
+  <script src="../lib/audio.js"></script>
+  <script src="../lib/dictionary.js"></script>
+  <script src="../lib/ui.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

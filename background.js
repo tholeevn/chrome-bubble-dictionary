@@ -1,4 +1,6 @@
 const MENU_ID = 'vocab-bubble-lookup';
+// Phải khớp với content_scripts trong manifest.json
+const CONTENT_FILES = ['lib/store.js', 'lib/audio.js', 'lib/dictionary.js', 'lib/ui.js', 'content.js'];
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
@@ -23,7 +25,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     try {
       const target = { tabId: tab.id, frameIds: [options.frameId] };
       await chrome.scripting.insertCSS({ target, files: ['content.css'] });
-      await chrome.scripting.executeScript({ target, files: ['content.js'] });
+      await chrome.scripting.executeScript({ target, files: CONTENT_FILES });
       await chrome.tabs.sendMessage(tab.id, message, options);
     } catch (err) {
       console.warn('[Vocab Bubble] Không thể tra từ trên trang này:', err);

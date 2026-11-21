@@ -1,227 +1,94 @@
 (() => {
   'use strict';
 
-  const API_URL = 'https://api.dictionaryapi.dev/api/v2/entries/en/';
-  const TRANSLATE_URL = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=vi&dt=t&dj=1&q=';
-  const CAMBRIDGE_URL ='https://dictionary.cambridge.org/dictionary/english/';
+  const { store, audio, dictionary, ui } = globalThis.VB;
+  const { el, iconButton, ICONS } = ui;
+
   const WORD_PATTERN = /^[A-Za-z]+$/;
   const MAX_WORD_LENGTH = 45;
-  const MAX_DEFINITIONS = 2;
+  const MAX_CONTEXT_LENGTH = 300;
   const CURSOR_OFFSET = 12;
   const VIEWPORT_MARGIN = 8;
   const BUBBLE_ID = 'vocab-bubble-ext';
 
-  const SVG_NS = 'http://www.w3.org/2000/svg';
-  const ICONS = {
-    speaker: [
-      'M11 5 6 9H2v6h4l5 4V5z',
-      'M15.54 8.46a5 5 0 0 1 0 7.07',
-      'M19.07 4.93a10 10 0 0 1 0 14.14'
-    ],
-    book: [
-      'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z',
-      'M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z'
-    ]
-  };
-
   const cache = new Map(); // word -> Promise<result>
+  let settings = { ...store.DEFAULT_SETTINGS };
   let bubble = null;
   let anchor = { x: 0, y: 0 };
   let lastContextMenuPoint = null;
   let requestId = 0;
-  let currentAudio = null;
 
-  // ---------- Tiện ích DOM ----------
+  store.getSettings().then((value) => { settings = value; });
+  store.onSettingsChanged((value) => {
+    settings = value;
+    cache.clear(); // kết quả tra phụ thuộc cài đặt (dịch tiếng Việt, dịch định nghĩa)
+  });
 
-  function el(tag, className, text) {
-    const node = document.createElement(tag);
-    if (className) node.className = className;
-    if (text != null) node.textContent = text;
-    return node;
-  }
-
-  // Dựng SVG bằng createElementNS (không dùng innerHTML để tương thích trang có Trusted Types)
-  function createIcon(paths) {
-    const svg = document.createElementNS(SVG_NS, 'svg');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    svg.setAttribute('aria-hidden', 'true');
-    for (const d of paths) {
-      const path = document.createElementNS(SVG_NS, 'path');
-      path.setAttribute('d', d);
-      svg.appendChild(path);
-    }
-    return svg;
-  }
-
-  function createIconButton(icon, label, extraClass, onClick) {
-    const btn = el('button', `vb-btn ${extraClass}`);
-    btn.type = 'button';
-    btn.title = label;
-    btn.setAttribute('aria-label', label);
-    btn.appendChild(createIcon(icon));
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onClick();
-    });
-    return btn;
-  }
-
-  // ---------- Gọi API & xử lý dữ liệu ----------
-
-  async function fetchJson(url) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  }
-
-  async function translate(text) {
-    const data = await fetchJson(TRANSLATE_URL + encodeURIComponent(text));
-    return (data.sentences || []).map((s) => s.trans || '').join('').trim();
-  }
-
-  // Dịch nhiều dòng trong một request, giữ nguyên thứ tự từng dòng
-  async function translateLines(lines) {
-    const translated = (await translate(lines.join('\n'))).split('\n').map((s) => s.trim());
-    return translated.length === lines.length ? translated : [];
-  }
-
-  async function fetchEntry(word) {
-    const [english, vietnamese] = await Promise.allSettled([
-      fetchJson(API_URL + encodeURIComponent(word)).then(parseEntries),
-      translate(word)
-    ]);
-
-    let vi = vietnamese.status === 'fulfilled' ? vietnamese.value : '';
-    if (vi.toLowerCase() === word) vi = ''; // Google trả lại nguyên từ = không dịch được
-
-    if (english.status === 'rejected' && !vi) throw new Error('Not found');
-
-    const result = english.status === 'fulfilled'
-      ? english.value
-      : { word, phonetic: '', audio: '', definitions: [] };
-    result.vi = vi;
-
-    if (result.definitions.length) {
-      try {
-        const translated = await translateLines(result.definitions.map((d) => d.definition));
-        result.definitions.forEach((d, i) => {
-          let vi = translated[i] || '';
-          // Định nghĩa động từ "To ..." hay bị dịch thành "Để ..." -> bỏ chữ "Để" thừa
-          if (/^to\s/i.test(d.definition)) {
-            vi = vi.replace(/^Để\s+(.)/u, (_, c) => c.toLocaleUpperCase('vi'));
-          }
-          d.vi = vi;
-        });
-      } catch {
-        // Không dịch được định nghĩa thì vẫn hiển thị bản tiếng Anh
-      }
-    }
-    return result;
-  }
+  // ---------- Tra từ ----------
 
   function lookup(word) {
     const key = word.toLowerCase();
     if (cache.has(key)) return cache.get(key);
 
-    const promise = fetchEntry(key);
+    const promise = dictionary.lookup(key, settings);
     cache.set(key, promise);
     promise.catch(() => cache.delete(key)); // không cache lỗi để lần sau thử lại
     return promise;
   }
 
-  function parseEntries(entries) {
-    if (!Array.isArray(entries) || entries.length === 0) {
-      throw new Error('No entries');
-    }
-
-    const phonetics = entries.flatMap((e) => e.phonetics || []);
-    const phonetic =
-      entries.find((e) => e.phonetic)?.phonetic ||
-      phonetics.find((p) => p.text)?.text ||
-      '';
-
-    // Ưu tiên giọng US, nếu không có thì lấy file audio đầu tiên
-    const audioEntry =
-      phonetics.find((p) => p.audio && /-us\.mp3$/i.test(p.audio)) ||
-      phonetics.find((p) => p.audio);
-    let audio = audioEntry ? audioEntry.audio : '';
-    if (audio.startsWith('//')) audio = 'https:' + audio;
-
-    // Với mỗi từ loại, lấy định nghĩa ngắn nhất trong vài nghĩa đầu (phổ biến nhất),
-    // bỏ qua định nghĩa chỉ lặp lại chính từ đó (vd: "To run.")
-    const word = String(entries[0].word || '').toLowerCase();
-    const isUseful = (text) => {
-      const core = text.toLowerCase().replace(/^(to|a|an|the)\s+/, '').replace(/[^a-z]/g, '');
-      return text && core !== word;
-    };
-    const byPartOfSpeech = new Map();
-    for (const meaning of entries.flatMap((e) => e.meanings || [])) {
-      const pos = meaning.partOfSpeech || '';
-      if (byPartOfSpeech.has(pos)) continue;
-      const best = (meaning.definitions || [])
-        .slice(0, 3)
-        .map((d) => d.definition || '')
-        .filter(isUseful)
-        .sort((a, b) => a.length - b.length)[0];
-      if (best) byPartOfSpeech.set(pos, { partOfSpeech: pos, definition: best });
-    }
-    const definitions = [...byPartOfSpeech.values()].slice(0, MAX_DEFINITIONS);
-
-    if (definitions.length === 0) throw new Error('No definitions');
-
-    return { word: entries[0].word, phonetic, audio, definitions };
+  function isValidWord(text) {
+    return text.length <= MAX_WORD_LENGTH && WORD_PATTERN.test(text);
   }
 
-  // ---------- Phát âm ----------
+  // Lấy câu chứa từ đang chọn để làm ví dụ khi lưu vào sổ từ
+  function getSelectionContext(word) {
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) return '';
 
-  function stopAudio() {
-    if (currentAudio) {
-      currentAudio.pause();
-      currentAudio = null;
+    let node = selection.getRangeAt(0).commonAncestorContainer;
+    if (node.nodeType !== Node.ELEMENT_NODE) node = node.parentElement;
+    // Leo lên vài cấp vì từ có thể nằm trong <b>, <a>, ...
+    for (let i = 0; i < 3 && node?.parentElement && node.textContent.trim().length < 80; i++) {
+      node = node.parentElement;
     }
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-  }
+    if (!node || node === document.body || node === document.documentElement) return '';
 
-  function speak(word) {
-    if (!('speechSynthesis' in window)) return;
-    const utterance = new SpeechSynthesisUtterance(word);
-    utterance.lang = 'en-US';
-    utterance.rate = 0.9;
-    window.speechSynthesis.speak(utterance);
-  }
+    const text = node.textContent.replace(/\s+/g, ' ');
+    const index = text.search(new RegExp(`\\b${word}\\b`, 'i'));
+    if (index < 0) return '';
 
-  function pronounce(word, audioUrl) {
-    stopAudio();
-    if (!audioUrl) {
-      speak(word);
-      return;
+    const start = Math.max(
+      text.lastIndexOf('. ', index),
+      text.lastIndexOf('! ', index),
+      text.lastIndexOf('? ', index)
+    ) + 1;
+    const endOffset = text.slice(index).search(/[.!?](\s|$)/);
+    const end = endOffset < 0 ? text.length : index + endOffset + 1;
+
+    let sentence = text.slice(start, end).trim();
+    if (sentence.length > MAX_CONTEXT_LENGTH) {
+      const half = MAX_CONTEXT_LENGTH / 2;
+      sentence = '…' + text.slice(Math.max(start, index - half), Math.min(end, index + half)).trim() + '…';
     }
-
-    const audio = new Audio(audioUrl);
-    currentAudio = audio;
-    let handled = false;
-    const fallback = () => {
-      // Bỏ qua nếu đã fallback rồi hoặc audio đã bị thay thế/dừng chủ động
-      if (handled || currentAudio !== audio) return;
-      handled = true;
-      currentAudio = null;
-      speak(word);
-    };
-
-    audio.addEventListener('error', fallback, { once: true });
-    audio.play().catch(fallback);
+    return sentence;
   }
 
-  function openCambridge(word) {
-    window.open(CAMBRIDGE_URL + encodeURIComponent(word.toLowerCase()), '_blank', 'noopener');
+  function recordHistory(result) {
+    if (!settings.historyEnabled) return;
+    store.addHistory({
+      word: result.word,
+      meaning: result.vi || result.definitions[0]?.definition || '',
+      audios: result.audios,
+      url: location.href,
+      title: document.title
+    }, settings.historyLimit).catch(() => {});
   }
 
   // ---------- Bong bóng ----------
 
   function hideBubble() {
     requestId++; // huỷ các response đang chờ
-    stopAudio();
+    audio.stop();
     if (bubble) {
       bubble.remove();
       bubble = null;
@@ -246,11 +113,25 @@
     bubble.style.top = `${top}px`;
   }
 
-  function buildBubble(word) {
+  function createRoot(role, label) {
     const root = el('div');
     root.id = BUBBLE_ID;
-    root.setAttribute('role', 'dialog');
-    root.setAttribute('aria-label', `Tra từ: ${word}`);
+    root.dataset.theme = settings.theme;
+    root.setAttribute('role', role);
+    if (label) root.setAttribute('aria-label', label);
+    return root;
+  }
+
+  function setSaved(button, saved) {
+    button.classList.toggle('vb-saved', saved);
+    button.setAttribute('aria-pressed', String(saved));
+    const label = saved ? 'Bỏ khỏi sổ từ' : 'Lưu vào sổ từ';
+    button.title = label;
+    button.setAttribute('aria-label', label);
+  }
+
+  function buildBubble(word, state) {
+    const root = createRoot('dialog', `Tra từ: ${word}`);
 
     const header = el('div', 'vb-header');
     const title = el('div', 'vb-title');
@@ -259,19 +140,35 @@
     title.append(wordEl, phoneticEl);
 
     const actions = el('div', 'vb-actions');
-    const speakBtn = createIconButton(ICONS.speaker, 'Phát âm', 'vb-btn-speak', () => {
-      pronounce(root.dataset.word || word, root.dataset.audio || '');
+    const speakBtn = iconButton(ICONS.speaker, 'Phát âm', 'vb-btn', () => {
+      audio.pronounce(state.result?.word || word, state.result?.audios, settings.accent);
     });
-    const cambridgeBtn = createIconButton(ICONS.book, 'Mở trên Cambridge', 'vb-btn-cambridge', () => {
-      openCambridge(word);
+    const saveBtn = iconButton(ICONS.star, 'Lưu vào sổ từ', 'vb-btn vb-btn-save', async (btn) => {
+      if (!state.result) return;
+      btn.disabled = true;
+      try {
+        const saved = await store.isSaved(state.result.word);
+        if (saved) {
+          await store.removeWord(state.result.word);
+        } else {
+          await store.saveWord({ ...structuredClone(state.result), context: state.context, source: state.source, savedAt: Date.now() });
+        }
+        setSaved(btn, !saved);
+      } finally {
+        btn.disabled = false;
+      }
     });
-    actions.append(speakBtn, cambridgeBtn);
+    saveBtn.disabled = true; // chỉ bật khi tra thành công
+    const cambridgeBtn = iconButton(ICONS.book, 'Mở trên Cambridge', 'vb-btn', () => {
+      window.open(dictionary.cambridgeUrl(word), '_blank', 'noopener');
+    });
+    actions.append(speakBtn, saveBtn, cambridgeBtn);
 
     header.append(title, actions);
     const body = el('div', 'vb-body');
     root.append(header, body);
 
-    return { root, wordEl, phoneticEl, body };
+    return { root, wordEl, phoneticEl, saveBtn, body };
   }
 
   function renderLoading(body) {
@@ -286,9 +183,7 @@
   }
 
   function renderResult(parts, result) {
-    const { root, wordEl, phoneticEl, body } = parts;
-    root.dataset.word = result.word;
-    root.dataset.audio = result.audio;
+    const { wordEl, phoneticEl, body } = parts;
     wordEl.textContent = result.word;
     phoneticEl.textContent = result.phonetic;
 
@@ -299,9 +194,10 @@
       body.appendChild(vi);
     }
 
-    if (result.definitions.length) {
+    const definitions = result.definitions.slice(0, settings.maxDefinitions);
+    if (definitions.length) {
       const list = el('ol', 'vb-defs');
-      for (const def of result.definitions) {
+      for (const def of definitions) {
         const item = el('li', 'vb-def');
         if (def.partOfSpeech) item.appendChild(el('span', 'vb-pos', def.partOfSpeech));
         item.appendChild(el('span', 'vb-def-text', def.definition));
@@ -321,23 +217,31 @@
   }
 
   function showNotice(message, point) {
-    const root = el('div');
-    root.id = BUBBLE_ID;
-    root.setAttribute('role', 'status');
+    const root = createRoot('status');
     root.appendChild(el('div', 'vb-status vb-error', message));
     mountBubble(root, point);
   }
 
   function showBubble(word, point) {
-    const parts = buildBubble(word);
+    // Lấy ngữ cảnh ngay lúc này, khi vùng chọn vẫn còn
+    const state = {
+      result: null,
+      context: getSelectionContext(word),
+      source: { url: location.href, title: document.title }
+    };
+    const parts = buildBubble(word, state);
     renderLoading(parts.body);
     mountBubble(parts.root, point);
 
     const id = ++requestId;
     lookup(word)
-      .then((result) => {
+      .then(async (result) => {
         if (id !== requestId) return;
+        state.result = result;
         renderResult(parts, result);
+        recordHistory(result);
+        setSaved(parts.saveBtn, await store.isSaved(result.word));
+        parts.saveBtn.disabled = false;
       })
       .catch(() => {
         if (id !== requestId) return;
@@ -357,6 +261,20 @@
   document.addEventListener('mousedown', (e) => {
     if (bubble && !isInsideBubble(e.target)) hideBubble();
   }, true);
+
+  // Chế độ "Tự hiện khi bôi đen" / "Bôi đen khi giữ Alt"
+  document.addEventListener('mouseup', (e) => {
+    if (e.button !== 0 || isInsideBubble(e.target)) return;
+    if (settings.trigger === 'contextMenu') return;
+    if (settings.trigger === 'altSelect' && !e.altKey) return;
+    const point = { x: e.pageX, y: e.pageY };
+
+    // Đợi trình duyệt cập nhật vùng chọn xong
+    setTimeout(() => {
+      const text = (window.getSelection()?.toString() || '').trim();
+      if (text && isValidWord(text)) showBubble(text, point);
+    }, 0);
+  });
 
   // Ghi nhớ vị trí chuột phải để hiển thị bong bóng tại đó khi chọn mục "Tra từ" trong menu
   document.addEventListener('contextmenu', (e) => {
@@ -382,7 +300,7 @@
     lastContextMenuPoint = null;
 
     const text = String(message.text || '').trim();
-    if (text.length > MAX_WORD_LENGTH || !WORD_PATTERN.test(text)) {
+    if (!isValidWord(text)) {
       showNotice('Hãy bôi đen một từ tiếng Anh (chỉ gồm chữ cái, không có khoảng trắng).', point);
     } else {
       showBubble(text, point);

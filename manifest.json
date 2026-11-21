@@ -1,16 +1,24 @@
 {
   "manifest_version": 3,
   "name": "Vocab Bubble – Tra từ tiếng Anh",
-  "version": "1.2.0",
-  "description": "Bôi đen một từ tiếng Anh, chuột phải chọn \"Tra từ\" để xem nghĩa tiếng Anh/Việt, phiên âm IPA, nghe phát âm và mở nhanh trên Cambridge Dictionary.",
-  "permissions": ["contextMenus", "activeTab", "scripting"],
+  "version": "2.0.0",
+  "description": "Bôi đen một từ tiếng Anh, chuột phải chọn \"Tra từ\" để xem nghĩa tiếng Anh/Việt, phiên âm IPA, nghe phát âm, lưu vào sổ từ và mở nhanh trên Cambridge Dictionary.",
+  "permissions": ["contextMenus", "activeTab", "scripting", "storage"],
   "background": {
     "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "pages/popup.html",
+    "default_title": "Vocab Bubble"
+  },
+  "options_ui": {
+    "page": "pages/manager.html",
+    "open_in_tab": true
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": ["lib/store.js", "lib/audio.js", "lib/dictionary.js", "lib/ui.js", "content.js"],
       "css": ["content.css"],
       "run_at": "document_idle",
       "all_frames": true

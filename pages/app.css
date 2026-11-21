@@ -1,0 +1,530 @@
+/* ===== Giao diện chung cho popup và trang quản lý ===== */
+
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --fg: #1f2937;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --accent: #2563eb;
+  --accent-bg: #eff6ff;
+  --danger: #dc2626;
+  --danger-bg: #fef2f2;
+  --star: #f59e0b;
+  --pos-bg: #f3f4f6;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #111827;
+  --surface: #1f2937;
+  --fg: #f3f4f6;
+  --muted: #9ca3af;
+  --border: #374151;
+  --accent: #60a5fa;
+  --accent-bg: rgba(96, 165, 250, 0.15);
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.15);
+  --pos-bg: #374151;
+  --shadow: none;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111827;
+    --surface: #1f2937;
+    --fg: #f3f4f6;
+    --muted: #9ca3af;
+    --border: #374151;
+    --accent: #60a5fa;
+    --accent-bg: rgba(96, 165, 250, 0.15);
+    --danger: #f87171;
+    --danger-bg: rgba(248, 113, 113, 0.15);
+    --pos-bg: #374151;
+    --shadow: none;
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/* ---------- Bố cục ---------- */
+
+body.popup {
+  display: flex;
+  flex-direction: column;
+  width: 380px;
+  height: 560px;
+}
+
+body.popup .content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px 12px;
+}
+
+body.manager .layout {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+body.manager {
+  font-size: 14px;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+body.popup .app-header {
+  padding: 12px 12px 4px;
+}
+
+.app-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+body.manager .app-title {
+  font-size: 22px;
+}
+
+.app-subtitle {
+  margin: 2px 0 0;
+  color: var(--muted);
+}
+
+.app-header-actions {
+  display: flex;
+  gap: 2px;
+}
+
+/* ---------- Tabs & toolbar ---------- */
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  padding: 0 12px;
+}
+
+body.manager .tabs {
+  margin-top: 16px;
+  padding: 0;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: -1px;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--fg);
+}
+
+.tab.active {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+}
+
+.tab-count:not(:empty) {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--pos-bg);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+body.manager .toolbar {
+  padding: 16px 0;
+}
+
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.search {
+  flex: 1;
+  min-width: 160px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  outline: none;
+}
+
+.search:focus,
+.select:focus {
+  border-color: var(--accent);
+}
+
+.select {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.btn {
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-danger:hover {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.link-btn {
+  border: 0;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Nút icon ---------- */
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.icon-btn-danger:hover {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.icon-btn-save.is-saved,
+.icon-btn-save.is-saved:hover {
+  color: var(--star);
+}
+
+.icon-btn-save.is-saved svg {
+  fill: currentColor;
+}
+
+.icon-btn:disabled {
+  cursor: default;
+}
+
+.icon-btn.is-loading {
+  opacity: 0.4;
+}
+
+.icon-btn svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- Danh sách thẻ ---------- */
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 6px;
+}
+
+.card-main {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+
+button.card-main {
+  cursor: pointer;
+}
+
+.card-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+}
+
+.card-word {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.card-phonetic {
+  color: var(--muted);
+}
+
+.card-meaning {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.card-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: -4px;
+  padding: 0 10px 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.card-details {
+  padding: 8px 10px 10px;
+  border-top: 1px solid var(--border);
+}
+
+.defs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pos {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--pos-bg);
+  color: var(--muted);
+  font-size: 11px;
+  font-style: italic;
+  line-height: 18px;
+}
+
+.def-vi {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.card-context {
+  margin: 10px 0 0;
+  padding: 4px 10px;
+  border-left: 3px solid var(--accent);
+  color: var(--fg);
+  font-style: italic;
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.card-source {
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--accent);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-source:hover {
+  text-decoration: underline;
+}
+
+.empty {
+  padding: 32px 16px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.more {
+  padding: 8px;
+  text-align: center;
+}
+
+/* ---------- Cài đặt ---------- */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 16px;
+}
+
+.setting-group {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.setting-group legend {
+  padding: 0 6px;
+  font-weight: 700;
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.option input {
+  margin: 3px 0 0;
+  accent-color: var(--accent);
+}
+
+.option small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.option-inline {
+  align-items: center;
+  justify-content: space-between;
+  max-width: 360px;
+}
+
+.hint {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ---------- Thông báo ---------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  z-index: 10;
+  max-width: calc(100% - 32px);
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--fg);
+  color: var(--bg);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 8px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
