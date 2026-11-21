@@ -1,0 +1,231 @@
+/* ===== Vocab Bubble =====
+   Mọi selector đều bắt đầu bằng #vocab-bubble-ext để không ảnh hưởng trang web
+   và có độ ưu tiên đủ cao để CSS của trang không ghi đè. */
+
+#vocab-bubble-ext {
+  --vb-bg: #ffffff;
+  --vb-fg: #1f2937;
+  --vb-muted: #6b7280;
+  --vb-border: #e5e7eb;
+  --vb-accent: #2563eb;
+  --vb-accent-bg: #eff6ff;
+  --vb-pos-bg: #f3f4f6;
+  --vb-error: #dc2626;
+  --vb-shadow: 0 10px 30px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.08);
+
+  position: absolute;
+  z-index: 2147483647;
+  min-width: 220px;
+  max-width: 320px;
+  padding: 10px 12px 12px;
+  background: var(--vb-bg);
+  color: var(--vb-fg);
+  border: 1px solid var(--vb-border);
+  border-radius: 12px;
+  box-shadow: var(--vb-shadow);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: left;
+  animation: vb-pop 0.14s ease-out;
+}
+
+@media (prefers-color-scheme: dark) {
+  #vocab-bubble-ext {
+    --vb-bg: #1f2937;
+    --vb-fg: #f3f4f6;
+    --vb-muted: #9ca3af;
+    --vb-border: #374151;
+    --vb-accent: #60a5fa;
+    --vb-accent-bg: rgba(96, 165, 250, 0.15);
+    --vb-pos-bg: #374151;
+    --vb-error: #f87171;
+    --vb-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Reset có chọn lọc cho các phần tử con */
+#vocab-bubble-ext,
+#vocab-bubble-ext * {
+  box-sizing: border-box;
+  margin: 0;
+  letter-spacing: normal;
+  text-transform: none;
+  text-decoration: none;
+  text-shadow: none;
+  float: none;
+}
+
+#vocab-bubble-ext * {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+}
+
+/* ---------- Header ---------- */
+
+#vocab-bubble-ext .vb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--vb-border);
+}
+
+#vocab-bubble-ext .vb-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  min-width: 0;
+}
+
+#vocab-bubble-ext .vb-word {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--vb-fg);
+  word-break: break-word;
+}
+
+#vocab-bubble-ext .vb-phonetic {
+  font-family: "Lucida Sans Unicode", "Arial Unicode MS", "Segoe UI", sans-serif;
+  font-size: 13px;
+  color: var(--vb-muted);
+}
+
+#vocab-bubble-ext .vb-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+#vocab-bubble-ext .vb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--vb-muted);
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+#vocab-bubble-ext .vb-btn:hover {
+  background: var(--vb-accent-bg);
+  color: var(--vb-accent);
+}
+
+#vocab-bubble-ext .vb-btn:focus-visible {
+  outline: 2px solid var(--vb-accent);
+  outline-offset: 1px;
+}
+
+#vocab-bubble-ext .vb-btn svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- Body ---------- */
+
+#vocab-bubble-ext .vb-body {
+  padding-top: 8px;
+}
+
+#vocab-bubble-ext .vb-vi {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#vocab-bubble-ext .vb-vi-label {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--vb-accent-bg);
+  color: var(--vb-accent);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+}
+
+#vocab-bubble-ext .vb-vi-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vb-fg);
+}
+
+#vocab-bubble-ext .vb-def-vi {
+  display: block;
+  margin-top: 2px;
+  color: var(--vb-muted);
+  font-style: italic;
+}
+
+#vocab-bubble-ext .vb-defs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+}
+
+#vocab-bubble-ext .vb-def {
+  display: block;
+}
+
+#vocab-bubble-ext .vb-pos {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--vb-pos-bg);
+  color: var(--vb-muted);
+  font-size: 11px;
+  font-style: italic;
+  line-height: 18px;
+  vertical-align: 1px;
+}
+
+#vocab-bubble-ext .vb-def-text {
+  color: var(--vb-fg);
+}
+
+#vocab-bubble-ext .vb-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--vb-muted);
+}
+
+#vocab-bubble-ext .vb-error {
+  color: var(--vb-error);
+}
+
+#vocab-bubble-ext .vb-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--vb-border);
+  border-top-color: var(--vb-accent);
+  border-radius: 50%;
+  animation: vb-spin 0.7s linear infinite;
+}
+
+@keyframes vb-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes vb-pop {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
